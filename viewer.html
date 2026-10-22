@@ -9,7 +9,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
 header{background:#1e293b;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 header h1{font-size:15px;font-weight:600}
-#refresh-info{font-size:11px;opacity:.7;text-align:right}
+#refresh-info{font-size:11px;opacity:.8}
 #reload-btn{background:#3b82f6;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:8px;white-space:nowrap}
 .filters{padding:10px 12px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:6px}
 .fbtn{border:1px solid #cbd5e1;background:#fff;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:12px}
@@ -29,23 +29,21 @@ header h1{font-size:15px;font-weight:600}
 .badge-継続中{background:#f0fdf4;color:#15803d}
 .badge-依頼中{background:#fdf4ff;color:#7e22ce}
 .badge-定期{background:#fff7ed;color:#c2410c}
-.deadline{font-weight:600}
-.deadline.urgent{color:#ef4444}
-.deadline.warn{color:#f97316}
+.deadline.urgent{color:#ef4444;font-weight:600}
+.deadline.warn{color:#f97316;font-weight:600}
 .deadline.ok{color:#16a34a}
 .card-actions{display:flex;gap:4px;flex-shrink:0;align-items:flex-start;margin-top:2px}
-.url-btn{background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;white-space:nowrap;text-decoration:none;display:inline-block;line-height:1.4}
+.url-btn{background:#3b82f6;color:#fff;border:none;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;white-space:nowrap;text-decoration:none;display:inline-block;line-height:1.6}
 .expand-btn{background:#f1f5f9;color:#475569;border:none;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:11px;white-space:nowrap}
 .card-body{padding:0 12px 10px;display:none;border-top:1px solid #f1f5f9}
 .card-body.open{display:block}
 .detail-row{padding:5px 0;display:flex;gap:6px;font-size:12px;border-bottom:1px solid #f8fafc}
 .detail-row:last-child{border-bottom:none}
-.detail-label{color:#94a3b8;min-width:80px;flex-shrink:0;font-size:11px;padding-top:1px}
+.detail-label{color:#94a3b8;min-width:80px;flex-shrink:0;font-size:11px;padding-top:2px}
 .detail-value{color:#1a1a2e;white-space:pre-wrap;word-break:break-all;line-height:1.6}
 .next-action{color:#2563eb;font-weight:500}
-.url-link{color:#3b82f6;text-decoration:none;word-break:break-all;font-size:12px}
 .empty{text-align:center;padding:40px;color:#94a3b8;font-size:14px}
-.loading{text-align:center;padding:60px;color:#64748b}
+.err-box{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;color:#991b1b;font-size:13px;line-height:1.7}
 .cat-防災{border-left-color:#ef4444}
 .cat-OA{border-left-color:#3b82f6}
 .cat-設備{border-left-color:#f97316}
@@ -53,9 +51,7 @@ header h1{font-size:15px;font-weight:600}
 .cat-その他{border-left-color:#94a3b8}
 @media(min-width:600px){
   .container{padding:14px 20px}
-  .card-header{padding:12px 14px}
   .card-title{font-size:14px}
-  .card-meta{font-size:12px}
   .badge{font-size:11px}
   .url-btn,.expand-btn{font-size:12px;padding:5px 10px}
 }
@@ -78,14 +74,12 @@ header h1{font-size:15px;font-weight:600}
   <button class="fbtn" onclick="setFilter(this,'人事')">🟣 人事</button>
   <button class="fbtn" onclick="setFilter(this,'その他')">⚪ その他</button>
 </div>
-<div class="container" id="container">
-  <div class="loading">📂 データを読み込み中...</div>
-</div>
+<div class="container" id="container"><div class="empty" style="padding-top:60px">⏳ 読み込み中...</div></div>
 
 <script>
 var allTasks=[], currentFilter='active';
 
-function setFilter(btn, f){
+function setFilter(btn,f){
   document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('active')});
   btn.classList.add('active');
   currentFilter=f;
@@ -101,20 +95,16 @@ function deadlineClass(d){
 }
 
 function toggleCard(id){
-  var body=document.getElementById('b-'+id);
-  var btn=document.getElementById('e-'+id);
-  if(body.classList.contains('open')){
-    body.classList.remove('open');
-    btn.textContent='▼ 詳細';
-  } else {
-    body.classList.add('open');
-    btn.textContent='▲ 閉じる';
-  }
+  var body=document.getElementById('b'+id);
+  var btn=document.getElementById('e'+id);
+  if(!body||!btn) return;
+  if(body.classList.contains('open')){body.classList.remove('open');btn.textContent='▼ 詳細';}
+  else{body.classList.add('open');btn.textContent='▲ 閉じる';}
 }
 
 function esc(s){
   if(s==null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function render(){
@@ -123,83 +113,69 @@ function render(){
     if(currentFilter==='all') return true;
     return t.cat===currentFilter;
   });
-
   if(tasks.length===0){
     document.getElementById('container').innerHTML='<div class="empty">表示するタスクがありません</div>';
     return;
   }
-
   var groups={};
   tasks.forEach(function(t){
     var k=t.cat||'その他';
     if(!groups[k]) groups[k]=[];
     groups[k].push(t);
   });
-
   var html='';
   ['防災','OA','設備','人事','その他'].forEach(function(cat){
-    if(!groups[cat]||groups[cat].length===0) return;
+    if(!groups[cat]||!groups[cat].length) return;
     html+='<div class="section"><div class="section-title">'+esc(cat)+'関係（'+groups[cat].length+'件）</div>';
-    groups[cat].forEach(function(t){
-      var id=esc(t.id||Math.random().toString(36).slice(2));
+    groups[cat].forEach(function(t,gi){
+      var uid='t'+(t.id||(cat+gi)).replace(/[^a-z0-9]/gi,'');
       var dc=deadlineClass(t.deadline);
-      var memoPreview=t.memo?(t.memo.length>50?t.memo.substring(0,50)+'…':t.memo):'';
-
+      var mp=t.memo?(t.memo.length>55?t.memo.slice(0,55)+'…':t.memo):'';
       html+='<div class="card cat-'+esc(t.cat||'その他')+'">';
-      html+='<div class="card-header" onclick="toggleCard(''+id+'')">';
-      html+='<div class="card-main">';
+      html+='<div class="card-header" onclick="toggleCard(\''+uid+'\')"><div class="card-main">';
       html+='<div class="card-title"><span class="badge badge-'+esc(t.kind)+'">'+esc(t.kind)+'</span> '+esc(t.name)+'</div>';
       html+='<div class="card-meta">';
       if(t.deadline) html+='<span class="deadline '+dc+'">📅 '+esc(t.deadline)+'</span>';
       if(t.person) html+='<span>👤 '+esc(t.person)+'</span>';
-      if(memoPreview) html+='<span>'+esc(memoPreview)+'</span>';
+      if(mp) html+='<span>'+esc(mp)+'</span>';
       html+='</div></div>';
-      // アクションボタン（URLボタン＋詳細ボタン）
       html+='<div class="card-actions">';
-      if(t.url){
-        html+='<a class="url-btn" href="'+esc(t.url)+'" target="_blank" onclick="event.stopPropagation()">🔗 開く</a>';
-      }
-      html+='<button class="expand-btn" id="e-'+id+'" onclick="event.stopPropagation();toggleCard(''+id+'')">▼ 詳細</button>';
-      html+='</div>';
-      html+='</div>';
-
-      // 詳細展開
-      html+='<div class="card-body" id="b-'+id+'">';
-      if(t.memo){
-        html+='<div class="detail-row"><span class="detail-label">メモ</span><span class="detail-value">'+esc(t.memo)+'</span></div>';
-      }
-      if(t.next){
-        html+='<div class="detail-row"><span class="detail-label">次のアクション</span><span class="detail-value next-action">'+esc(t.next)+'</span></div>';
-      }
-      if(t.priority){
-        html+='<div class="detail-row"><span class="detail-label">優先度</span><span class="detail-value">'+esc(t.priority)+'</span></div>';
-      }
+      if(t.url) html+='<a class="url-btn" href="'+esc(t.url)+'" target="_blank" onclick="event.stopPropagation()">🔗 開く</a>';
+      html+='<button class="expand-btn" id="e'+uid+'" onclick="event.stopPropagation();toggleCard(\''+uid+'\')">▼ 詳細</button></div></div>';
+      html+='<div class="card-body" id="b'+uid+'">';
+      if(t.memo) html+='<div class="detail-row"><span class="detail-label">メモ</span><span class="detail-value">'+esc(t.memo)+'</span></div>';
+      if(t.next) html+='<div class="detail-row"><span class="detail-label">次のアクション</span><span class="detail-value next-action">'+esc(t.next)+'</span></div>';
+      if(t.priority) html+='<div class="detail-row"><span class="detail-label">優先度</span><span class="detail-value">'+esc(t.priority)+'</span></div>';
       html+='</div></div>';
     });
     html+='</div>';
   });
-
   document.getElementById('container').innerHTML=html;
 }
 
 function loadData(){
   document.getElementById('refresh-info').textContent='読み込み中...';
-  fetch('https://task-manager.tsukasa-kihara.workers.dev/api/data?_='+Date.now())
-    .then(function(r){return r.json()})
+  var url='https://task-manager.tsukasa-kihara.workers.dev/api/data?_='+Date.now();
+  fetch(url)
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
     .then(function(data){
-      allTasks=data.T||[];
+      if(!data.T) throw new Error('データ形式エラー: T key missing');
+      allTasks=data.T;
       var now=new Date().toLocaleTimeString('ja-JP');
       document.getElementById('refresh-info').textContent=now+' ('+allTasks.length+'件)';
       render();
     })
-    .catch(function(){
-      document.getElementById('refresh-info').textContent='読み込みエラー';
-      document.getElementById('container').innerHTML='<div class="empty">データの取得に失敗しました。</div>';
+    .catch(function(e){
+      document.getElementById('refresh-info').textContent='エラー';
+      document.getElementById('container').innerHTML='<div class="err-box">❌ データ取得失敗<br>'+e.message+'<br><br>ネットワーク接続を確認して🔄更新ボタンを押してください。</div>';
     });
 }
 
 loadData();
-setInterval(loadData, 60000);
+setInterval(loadData,60000);
 </script>
 </body>
 </html>
