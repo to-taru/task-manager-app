@@ -705,6 +705,9 @@ body.show-pri .col-pri{display:table-cell}
   <div class="sb-sync"><div class="dot" id="dot"></div><span id="sync-txt">初期化中...</span></div>
 
   <!-- Googleカレンダー連携セクション -->
+  <div class="sb-sec" style="padding:6px 14px">
+    <button onclick="showSetupBar()" style="width:100%;background:var(--side2);border:1px solid var(--side3);color:var(--stext);border-radius:6px;padding:5px;font-size:12px;cursor:pointer;text-align:left">🔑 トークン変更</button>
+  </div>
   <div class="sb-sec">
     <div class="sb-ttl" onclick="sbToggle('sec-gcal')">
       📅 Googleカレンダー<span class="sb-arrow" id="arr-gcal">▶</span>
@@ -827,9 +830,10 @@ body.show-pri .col-pri{display:table-cell}
 
 <div class="main-wrap">
   <div class="setup-bar" id="setup-bar" style="display:none">
-    🔑 GitHubトークンを設定するとどこからでもデータが保存されます →
+    🔑 <span id="tok-label">GitHubトークンを入力してください</span>
     <input class="tok-in" id="tok-in" type="password" placeholder="ghp_xxxxxxxxxxxx">
     <button class="tok-btn" onclick="saveToken()">設定する</button>
+    <button class="tok-btn" style="background:var(--side3);margin-left:4px" onclick="toggleSetupBar()">✕</button>
     <span style="opacity:.7;font-size:11px">※このブラウザにのみ保存されます</span>
   </div>
 
@@ -3366,6 +3370,17 @@ function registerParsedTask(){
   render();
   closeParseModal();
   showToast('タスクを登録しました: '+name);
+}
+
+function showSetupBar(){
+  var bar=document.getElementById('setup-bar');
+  var tok=getToken();
+  document.getElementById('tok-label').textContent=tok?'🔑 トークン変更（現在: '+tok.slice(0,8)+'…）':'GitHubトークンを入力してください';
+  bar.style.display='flex';
+  document.getElementById('tok-in').focus();
+}
+function toggleSetupBar(){
+  document.getElementById('setup-bar').style.display='none';
 }
 </script>
 
