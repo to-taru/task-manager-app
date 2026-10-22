@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>タスク一覧（閲覧用）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#f5f6fa;color:#222;font-size:14px}
+.header{background:#1e293b;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.header h1{font-size:16px;font-weight:700}
+.badge{background:#3b82f6;color:#fff;border-radius:20px;padding:2px 10px;font-size:12px}
+.updated{font-size:11px;opacity:.7;margin-left:auto}
+.filters{padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:49px;z-index:9}
+.fbt{border:1px solid #cbd5e1;background:#fff;border-radius:20px;padding:4px 14px;font-size:12px;cursor:pointer;color:#475569}
+.fbt.active{background:#1e293b;color:#fff;border-color:#1e293b}
+.main{max-width:1000px;margin:0 auto;padding:16px}
+.cat-sec{margin-bottom:20px}
+.cat-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#e2e8f0;border-radius:8px;margin-bottom:8px;font-weight:700;font-size:13px}
+.task-card{background:#fff;border-radius:8px;padding:12px 14px;margin-bottom:6px;border-left:4px solid #94a3b8;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.task-card.kind-完了{opacity:.55;border-left-color:#94a3b8}
+.task-card.kind-継続中{border-left-color:#3b82f6}
+.task-card.kind-依頼中{border-left-color:#f59e0b}
+.task-card.kind-保留{border-left-color:#94a3b8}
+.task-card.kind-確定予定{border-left-color:#10b981}
+.task-card.kind-新規{border-left-color:#6366f1}
+.task-top{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.kind-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:#f1f5f9;color:#475569;white-space:nowrap;flex-shrink:0}
+.task-name{font-weight:600;font-size:14px;flex:1;min-width:0}
+.deadline{font-size:12px;color:#64748b;white-space:nowrap}
+.deadline.urg{color:#ef4444;font-weight:700}
+.person{font-size:11px;color:#94a3b8;margin-top:2px}
+.memo{font-size:12px;color:#64748b;margin-top:6px;white-space:pre-wrap;word-break:break-all}
+.next{font-size:12px;color:#3b82f6;margin-top:4px;padding:4px 8px;background:#eff6ff;border-radius:4px}
+.loading{text-align:center;padding:60px;color:#94a3b8}
+.empty{text-align:center;padding:40px;color:#94a3b8;font-size:13px}
+@media(max-width:600px){.main{padding:8px}.filters{top:49px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>📋</div>
+  <h1>タスク一覧</h1>
+  <span class="badge" id="cnt">読込中</span>
+  <span class="updated" id="upd"></span>
+</div>
+<div class="filters" id="filters">
+  <button class="fbt active" data-f="active" onclick="setFilter('active')">進行中のみ</button>
+  <button class="fbt" data-f="all" onclick="setFilter('all')">全タスク</button>
+  <button class="fbt" data-f="防災" onclick="setFilter('防災')">🔥防災</button>
+  <button class="fbt" data-f="OA" onclick="setFilter('OA')">💻OA</button>
+  <button class="fbt" data-f="設備" onclick="setFilter('設備')">🔧設備</button>
+  <button class="fbt" data-f="人事" onclick="setFilter('人事')">👥人事</button>
+  <button class="fbt" data-f="その他" onclick="setFilter('その他')">📌その他</button>
+</div>
+<div class="main" id="main"><div class="loading">読み込み中...</div></div>
+
+<script>
+var WORKER='https://task-manager.tsukasa-kihara.workers.dev/api/data';
+var ALL=[], curFilter='active';
+var CATS=['防災','OA','設備','人事','その他'];
+var CICO={防災:'🔥',OA:'💻',設備:'🔧',人事:'👥',その他:'📌'};
+var KIND_ORDER=['新規','継続中','確定予定','依頼中','保留','完了'];
+
+function dd(s){if(!s)return null;var d=new Date(s),n=new Date();n.setHours(0,0,0,0);d.setHours(0,0,0,0);return Math.round((d-n)/86400000);}
+function fd(s){if(!s)return'';var d=new Date(s);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+(d.getDate());}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function setFilter(f){
+  curFilter=f;
+  document.querySelectorAll('.fbt').forEach(function(b){
+    b.classList.toggle('active', b.dataset.f===f);
+  });
+  render();
+}
+
+function filt(t){
+  if(t.kind==='完了') return curFilter==='all';
+  if(curFilter==='active') return true;
+  if(curFilter==='all') return true;
+  return t.cat===curFilter;
+}
+
+function render(){
+  var tasks=ALL.filter(filt);
+  // カテゴリ絞り込みの場合
+  if(['防災','OA','設備','人事','その他'].includes(curFilter)){
+    tasks=ALL.filter(function(t){return t.cat===curFilter&&t.kind!=='完了';});
+  }
+  document.getElementById('cnt').textContent=tasks.length+'件';
+  if(!tasks.length){document.getElementById('main').innerHTML='<div class="empty">該当タスクなし</div>';return;}
+
+  var cats = CATS.filter(function(c){return tasks.some(function(t){return t.cat===c;})});
+  var html='';
+  cats.forEach(function(cat){
+    var ct=tasks.filter(function(t){return t.cat===cat;});
+    if(!ct.length)return;
+    ct.sort(function(a,b){
+      var ai=KIND_ORDER.indexOf(a.kind),bi=KIND_ORDER.indexOf(b.kind);
+      if(ai!==bi)return ai-bi;
+      var da=a.deadline||'9999',db=b.deadline||'9999';
+      return da<db?-1:da>db?1:0;
+    });
+    html+='<div class="cat-sec"><div class="cat-hdr">'+CICO[cat]+' '+cat+'関係 <span style="font-weight:400;font-size:12px;color:#64748b">('+ct.length+'件)</span></div>';
+    ct.forEach(function(t){
+      var v=dd(t.deadline);
+      var dlc=v!==null&&v<=3?'urg':'';
+      var dlTxt=t.deadline?fd(t.deadline)+(v!==null&&v<=3?' ⚠️ '+v+'日':''):'';
+      html+='<div class="task-card kind-'+esc(t.kind)+'">';
+      html+='<div class="task-top"><span class="kind-tag">'+esc(t.kind)+'</span>';
+      html+='<span class="task-name">'+esc(t.name)+(t.fixed?' <span style="font-size:11px;color:#f59e0b;font-weight:700">確定</span>':'')+'</span>';
+      if(dlTxt) html+='<span class="deadline '+dlc+'">📅 '+esc(dlTxt)+'</span>';
+      html+='</div>';
+      if(t.person) html+='<div class="person">👤 '+esc(t.person)+'</div>';
+      if(t.memo) html+='<div class="memo">'+esc(t.memo.length>150?t.memo.slice(0,150)+'…':t.memo)+'</div>';
+      if(t.next) html+='<div class="next">▶ '+esc(t.next)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('main').innerHTML=html;
+}
+
+async function load(){
+  try{
+    var res=await fetch(WORKER+'?t='+Date.now(),{cache:'no-store'});
+    var d=await res.json();
+    ALL=Array.isArray(d)?d:(d.T||[]);
+    document.getElementById('upd').textContent='更新: '+new Date().toLocaleTimeString('ja-JP');
+    render();
+    setTimeout(load,60000); // 1分ごと自動更新
+  }catch(e){
+    document.getElementById('main').innerHTML='<div class="loading">読み込みエラー。再読み込みしてください。</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>
