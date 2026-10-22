@@ -355,17 +355,35 @@ tr:hover .racts,tr.show-acts .racts{opacity:1}
   .qsel{font-size:13px;padding:7px 6px}
   .qbtn{font-size:14px;padding:8px 14px;min-height:40px;white-space:nowrap;flex-shrink:0}
 
-  /* ===== テーブル（文字を大きく・行を高く）===== */
-  thead th:nth-child(6),tbody td:nth-child(6){display:none}
-  thead th:nth-child(7){width:36px!important;padding:2px 4px}tbody td:nth-child(7){padding:2px 4px}
+  /* ===== テーブル → カード形式（スマホ）===== */
+  .twrap table,.twrap tbody{display:block}
+  .twrap thead{display:none}
+  .twrap tr{display:flex;flex-wrap:wrap;position:relative;background:var(--white);border-radius:10px;margin-bottom:8px;padding:10px 44px 10px 12px;border-left:3px solid var(--bdr);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .twrap tr.done-r{opacity:.6}
+  .twrap tr.urg-r{border-left-color:#ef4444}
+  .twrap td{display:none;padding:0;border:none;background:none}
+  /* col3: 種別バッジ → 左ボーダーカラーは.bkクラスで代替、行内に表示 */
+  .twrap td:nth-child(3){display:block;width:100%;margin-bottom:4px}
+  .twrap td:nth-child(3) .bk{display:inline-flex;border:none;background:none;padding:0}
+  .twrap td:nth-child(3) .ksel{font-size:11px;padding:2px 6px;height:auto;border-radius:10px}
+  /* col4: タスク名 → フル幅 */
+  .twrap td:nth-child(4){display:block;width:100%}
+  .twrap td:nth-child(4) .tsub{display:none}
+  .twrap td:nth-child(4) .tnxt{font-size:12px;margin-top:3px;color:var(--acc)}
+  .twrap td:nth-child(4) .prog-bar{margin-top:4px}
+  /* col5: 期限 */
+  .twrap td:nth-child(5){display:block;width:100%;margin-top:4px;font-size:12px}
+  /* col7: 操作ボタン → 右上 */
+  .twrap td:nth-child(7){display:block;position:absolute;right:6px;top:8px;padding:0}
   .ibt:not(.url-btn):not(.exec-btn){display:none}
+  .url-btn{width:32px;height:32px;font-size:15px}
+  .exec-btn{font-size:11px;padding:3px 6px}
+  .racts{opacity:1;flex-direction:column;gap:3px}
   .twrap{border-radius:8px}
-  .tn td{font-size:14px;padding:10px 8px;line-height:1.5}
-  .tn-name{font-size:14px;font-weight:700;line-height:1.4}
   .cat-hdr{padding:12px 14px}
   .cat-ttl{font-size:15px}
-  thead th{font-size:12px;padding:8px 6px}
   .kbadge,.kbadge2{font-size:12px;padding:3px 8px}
+  .tn-name{font-size:14px;font-weight:700;line-height:1.4}
 
   /* ===== サイドバー ===== */
   .sb-item{padding:11px 10px;font-size:14px}
@@ -3559,4 +3577,5 @@ function toggleSetupBar(){
 </div>
 </body>
 </html>
+
 
