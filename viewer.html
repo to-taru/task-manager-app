@@ -17,38 +17,40 @@ header h1{font-size:16px;font-weight:600}
 .container{padding:12px 16px;max-width:900px;margin:0 auto}
 .section{margin-bottom:20px}
 .section-title{font-size:13px;font-weight:700;color:#64748b;margin-bottom:8px;padding:4px 0;border-bottom:1px solid #e2e8f0}
-.card{background:#fff;border-radius:10px;margin-bottom:8px;border-left:4px solid #94a3b8;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:.15s}
-.card:hover{box-shadow:0 3px 10px rgba(0,0,0,.12)}
-.card-header{padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+.card{background:#fff;border-radius:10px;margin-bottom:8px;border-left:4px solid #94a3b8;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-header{padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.card-header:hover{background:#f8fafc;border-radius:10px 10px 0 0}
 .card-main{flex:1;min-width:0}
 .card-title{font-size:14px;font-weight:600;margin-bottom:4px;line-height:1.4}
 .card-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#64748b}
 .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
-.badge.new{background:#dbeafe;color:#1d4ed8}
-.badge.reg{background:#f0fdf4;color:#15803d}
-.badge.done{background:#f1f5f9;color:#64748b}
-.badge.wait{background:#fefce8;color:#a16207}
+.badge-新規{background:#dbeafe;color:#1d4ed8}
+.badge-完了{background:#f1f5f9;color:#64748b}
+.badge-保留{background:#fefce8;color:#a16207}
+.badge-継続中{background:#f0fdf4;color:#15803d}
+.badge-依頼中{background:#fdf4ff;color:#7e22ce}
+.badge-定期{background:#fff7ed;color:#c2410c}
 .deadline{font-weight:600}
 .deadline.urgent{color:#ef4444}
 .deadline.warn{color:#f97316}
 .deadline.ok{color:#22c55e}
 .expand-btn{font-size:12px;color:#3b82f6;background:none;border:none;cursor:pointer;padding:0;white-space:nowrap;flex-shrink:0;margin-top:2px}
-.card-body{padding:0 14px 12px;display:none;border-top:1px solid #f1f5f9;margin-top:0}
+.card-body{padding:0 14px 12px;display:none;border-top:1px solid #f1f5f9}
 .card-body.open{display:block}
 .detail-row{padding:6px 0;display:flex;gap:8px;font-size:13px;border-bottom:1px solid #f8fafc}
 .detail-row:last-child{border-bottom:none}
-.detail-label{color:#64748b;min-width:80px;flex-shrink:0;font-size:12px}
+.detail-label{color:#64748b;min-width:90px;flex-shrink:0;font-size:12px;padding-top:1px}
 .detail-value{color:#1a1a2e;white-space:pre-wrap;word-break:break-all;line-height:1.6}
 .next-action{color:#2563eb;font-weight:500}
 .url-link{color:#3b82f6;text-decoration:none;word-break:break-all}
 .url-link:hover{text-decoration:underline}
 .empty{text-align:center;padding:40px;color:#94a3b8;font-size:14px}
 .loading{text-align:center;padding:60px;color:#64748b}
-.kind-防災{border-left-color:#ef4444}
-.kind-OA{border-left-color:#3b82f6}
-.kind-設備{border-left-color:#f97316}
-.kind-人事{border-left-color:#8b5cf6}
-.kind-その他{border-left-color:#94a3b8}
+.cat-防災{border-left-color:#ef4444}
+.cat-OA{border-left-color:#3b82f6}
+.cat-設備{border-left-color:#f97316}
+.cat-人事{border-left-color:#8b5cf6}
+.cat-その他{border-left-color:#94a3b8}
 </style>
 </head>
 <body>
@@ -59,14 +61,14 @@ header h1{font-size:16px;font-weight:600}
     <button id="reload-btn" onclick="loadData()">🔄 更新</button>
   </div>
 </header>
-<div class="filters" id="filters">
-  <button class="fbtn active" data-filter="active" onclick="setFilter(this,'active')">進行中</button>
-  <button class="fbtn" data-filter="all" onclick="setFilter(this,'all')">全タスク</button>
-  <button class="fbtn" data-filter="防災" onclick="setFilter(this,'防災')">防災</button>
-  <button class="fbtn" data-filter="OA" onclick="setFilter(this,'OA')">OA</button>
-  <button class="fbtn" data-filter="設備" onclick="setFilter(this,'設備')">設備</button>
-  <button class="fbtn" data-filter="人事" onclick="setFilter(this,'人事')">人事</button>
-  <button class="fbtn" data-filter="その他" onclick="setFilter(this,'その他')">その他</button>
+<div class="filters">
+  <button class="fbtn active" onclick="setFilter(this,'active')">進行中</button>
+  <button class="fbtn" onclick="setFilter(this,'all')">全タスク</button>
+  <button class="fbtn" onclick="setFilter(this,'防災')">防災</button>
+  <button class="fbtn" onclick="setFilter(this,'OA')">OA</button>
+  <button class="fbtn" onclick="setFilter(this,'設備')">設備</button>
+  <button class="fbtn" onclick="setFilter(this,'人事')">人事</button>
+  <button class="fbtn" onclick="setFilter(this,'その他')">その他</button>
 </div>
 <div class="container" id="container">
   <div class="loading">データを読み込み中...</div>
@@ -90,13 +92,6 @@ function deadlineClass(d){
   return 'ok';
 }
 
-function statusBadge(s){
-  if(s==='新規') return '<span class="badge new">新規</span>';
-  if(s==='完了') return '<span class="badge done">完了</span>';
-  if(s==='保留') return '<span class="badge wait">保留</span>';
-  return '<span class="badge reg">'+s+'</span>';
-}
-
 function toggleCard(id){
   var body=document.getElementById('body-'+id);
   var btn=document.getElementById('btn-'+id);
@@ -110,15 +105,16 @@ function toggleCard(id){
 }
 
 function esc(s){
-  if(!s) return '';
+  if(s==null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function render(){
+  // kind=ステータス、cat=種別
   var tasks=allTasks.filter(function(t){
-    if(currentFilter==='active') return t.status!=='完了';
+    if(currentFilter==='active') return t.kind!=='完了';
     if(currentFilter==='all') return true;
-    return t.kind===currentFilter;
+    return t.cat===currentFilter;
   });
 
   if(tasks.length===0){
@@ -126,57 +122,52 @@ function render(){
     return;
   }
 
-  // kindでグループ化
+  // catでグループ化
   var groups={};
-  tasks.forEach(function(t,i){
-    var k=t.kind||'その他';
+  tasks.forEach(function(t,gi){
+    var k=t.cat||'その他';
     if(!groups[k]) groups[k]=[];
-    groups[k].push({t:t,i:i});
+    groups[k].push(t);
   });
 
   var html='';
-  var kindOrder=['防災','OA','設備','人事','その他'];
-  kindOrder.forEach(function(kind){
-    if(!groups[kind]||groups[kind].length===0) return;
-    html+='<div class="section"><div class="section-title">'+esc(kind)+'関係（'+groups[kind].length+'件）</div>';
-    groups[kind].forEach(function(item){
-      var t=item.t, i=item.i;
+  var catOrder=['防災','OA','設備','人事','その他'];
+  catOrder.forEach(function(cat){
+    if(!groups[cat]||groups[cat].length===0) return;
+    html+='<div class="section"><div class="section-title">'+esc(cat)+'関係（'+groups[cat].length+'件）</div>';
+    groups[cat].forEach(function(t){
+      var id=t.id||Math.random();
       var dc=deadlineClass(t.deadline);
-      var deadlineStr=t.deadline?('<span class="deadline '+dc+'">📅 '+t.deadline+'</span>'):'';
-      var kindClass='kind-'+(t.kind||'その他');
+      var deadlineStr=t.deadline?('<span class="deadline '+dc+'">📅 '+esc(t.deadline)+'</span>'):'';
+      var badgeClass='badge badge-'+(t.kind||'');
+      var memoPreview=t.memo?(t.memo.length>60?t.memo.substring(0,60)+'…':t.memo):'';
 
-      // メモのプレビュー（50文字）
-      var memoPreview=t.memo?(t.memo.length>50?t.memo.substring(0,50)+'…':t.memo):'';
-
-      html+='<div class="card '+kindClass+'">';
-      html+='<div class="card-header" onclick="toggleCard('+i+')">';
+      html+='<div class="card cat-'+esc(t.cat||'その他')+'">';
+      html+='<div class="card-header" onclick="toggleCard(''+id+'')">';
       html+='<div class="card-main">';
-      html+='<div class="card-title">'+statusBadge(t.status)+' '+esc(t.name)+'</div>';
+      html+='<div class="card-title"><span class="'+badgeClass+'">'+esc(t.kind)+'</span> '+esc(t.name)+'</div>';
       html+='<div class="card-meta">';
       if(deadlineStr) html+=deadlineStr;
       if(t.person) html+='<span>👤 '+esc(t.person)+'</span>';
       if(memoPreview) html+='<span style="color:#475569">'+esc(memoPreview)+'</span>';
-      html+='</div>';
-      html+='</div>';
-      html+='<button class="expand-btn" id="btn-'+i+'" onclick="event.stopPropagation();toggleCard('+i+')">▼ 詳細</button>';
+      html+='</div></div>';
+      html+='<button class="expand-btn" id="btn-'+id+'" onclick="event.stopPropagation();toggleCard(''+id+'')">▼ 詳細</button>';
       html+='</div>';
 
-      // 詳細展開部分
-      html+='<div class="card-body" id="body-'+i+'">';
+      html+='<div class="card-body" id="body-'+id+'">';
       if(t.memo){
         html+='<div class="detail-row"><span class="detail-label">メモ</span><span class="detail-value">'+esc(t.memo)+'</span></div>';
       }
-      if(t.nextAction){
-        html+='<div class="detail-row"><span class="detail-label">次のアクション</span><span class="detail-value next-action">'+esc(t.nextAction)+'</span></div>';
+      if(t.next){
+        html+='<div class="detail-row"><span class="detail-label">次のアクション</span><span class="detail-value next-action">'+esc(t.next)+'</span></div>';
       }
       if(t.url){
-        html+='<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a class="url-link" href="'+esc(t.url)+'" target="_blank">🔗 '+esc(t.url)+'</a></span></div>';
+        html+='<div class="detail-row"><span class="detail-label">URL</span><span class="detail-value"><a class="url-link" href="'+esc(t.url)+'" target="_blank">🔗 リンクを開く</a></span></div>';
       }
-      if(t.kind){
-        html+='<div class="detail-row"><span class="detail-label">種別</span><span class="detail-value">'+esc(t.kind)+'</span></div>';
+      if(t.priority){
+        html+='<div class="detail-row"><span class="detail-label">優先度</span><span class="detail-value">'+esc(t.priority)+'</span></div>';
       }
-      html+='</div>';
-      html+='</div>';
+      html+='</div></div>';
     });
     html+='</div>';
   });
@@ -189,14 +180,15 @@ function loadData(){
   fetch('https://task-manager.tsukasa-kihara.workers.dev/api/data?_='+Date.now())
     .then(function(r){return r.json()})
     .then(function(data){
-      allTasks=Array.isArray(data)?data:(data.tasks||[]);
+      // データ構造: {T:[...tasks], ARCH:[...], OT:[...]}
+      allTasks=data.T||[];
       var now=new Date().toLocaleTimeString('ja-JP');
       document.getElementById('refresh-info').textContent='最終更新: '+now+' ('+allTasks.length+'件)';
       render();
     })
     .catch(function(e){
       document.getElementById('refresh-info').textContent='読み込みエラー';
-      document.getElementById('container').innerHTML='<div class="empty">データの取得に失敗しました。ネットワークを確認してください。</div>';
+      document.getElementById('container').innerHTML='<div class="empty">データの取得に失敗しました。</div>';
     });
 }
 
