@@ -3292,37 +3292,74 @@ function closeParseModal(){
 function runParseText(){
   var text=document.getElementById('parse-input').value.trim();
   if(!text){alert('テキストを貼り付けてください');return;}
-
-  // タスク名抽出
-  var name='';
   var lines=text.split(/\r?\n/).map(function(l){return l.trim()}).filter(function(l){return l.length>0});
-  // 件名・タイトルパターン
-  for(var li=0;li<Math.min(lines.length,10);li++){
-    var l=lines[li];
-    var sm=l.match(/^(?:件名|Subject|タイトル)[：:]\s*(.+)/);
-    if(sm){name=sm[1].trim();break;}
-    var sm2=l.match(/^【([^】]+)】/);
-    if(sm2){name=sm2[1].trim();break;}
-    var sm3=l.match(/^■\s*(.+)/);
-    if(sm3&&sm3[1].length<60){name=sm3[1].trim();break;}
+
+  // === 宛先・挨拶行の判定 ===
+  function isHeaderLine(l){
+    return /^(From|To|CC|Cc|BCC|Date|送信者|宛先|日時|件名|Subject)[：:]/i.test(l)
+      ||/^Cc[：：]/i.test(l)
+      ||/^(いつも|お世話|平素|拝啓|前略|謹啓|はじめまして|お疲れ様|お疲れ)/.test(l)
+      ||/^.{1,15}(様|殿|先生|施設長|院長|部長|課長|主任|所長|センター長|ホーム長)$/.test(l);
   }
+
+  // === 件名抽出 ===
+  var name='';
+  for(var i=0;i<Math.min(lines.length,15);i++){
+    var l=lines[i];
+    var m;
+    m=l.match(/^(?:件名|Subject|Re:|RE:|Fwd:|FW:)[：:\s]*(.+)/i);
+    if(m){name=m[1].replace(/^Re:\s*/i,'').replace(/^FW:\s*/i,'').trim();break;}
+    m=l.match(/^【([^】]{3,40})】/);
+    if(m){name=m[1];break;}
+    m=l.match(/^■\s*(.{3,40})/);
+    if(m){name=m[1];break;}
+    m=l.match(/^●\s*(.{3,40})/);
+    if(m){name=m[1];break;}
+  }
+
+  // 件名なし→本文から最初の実質行を探す
   if(!name){
-    for(var li=0;li<Math.min(lines.length,5);li++){
-      if(lines[li].length>=4&&lines[li].length<=50&&!/^(From|To|CC|Date|送信者|宛先|日時)/.test(lines[li])){
-        name=lines[li];break;
+    for(var i=0;i<lines.length;i++){
+      var l=lines[i];
+      if(isHeaderLine(l)) continue;
+      if(/です。$|ます。$|ました。$/.test(l)&&i<4) continue; // 挨拶文スキップ
+      if(l.length>=8&&l.length<=60){
+        // キーワードから短くする試み
+        var kw=l.replace(/(?:させて頂きました|いただけますでしょうか|ご確認お願いいたします|よろしくお願いいたします)[。、]*/g,'').trim();
+        name=kw.length>=5?kw:l;
+        name=name.substring(0,45);
+        break;
       }
     }
   }
-  if(!name) name=text.substring(0,40).replace(/\s+/g,' ');
 
-  // 日付抽出
+  // === 送信者・担当者抽出 ===
+  var person='';
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i];
+    var m;
+    // 「〇〇の〇〇です/と申します」
+    m=l.match(/([^\s、。　]{2,15})の([^\s、。　]{1,8})(?:と申します|です|でございます)/);
+    if(m){person=m[1]+' '+m[2];break;}
+    // 「担当の〇〇です」
+    m=l.match(/担当(?:者?の)?([^\s、。]{1,10})(?:です|と申します|でございます)/);
+    if(m){person=m[1];break;}
+    // 「担当：〇〇」
+    m=l.match(/(?:担当者?|連絡先)[：:\s]+([^\s\n<（(【、。]{1,15})/);
+    if(m){person=m[1].trim();break;}
+    // 「From: 〇〇」
+    m=l.match(/^From[：:\s]+([^<\n]{1,20})/i);
+    if(m){person=m[1].trim();break;}
+  }
+
+  // === 日付抽出 ===
   var deadline='';
   var dm;
-  dm=text.match(/(?:期限|締切|締め切り|まで|日程|開催日|実施日|予定日)[^\d]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
-  if(dm){deadline=dm[1]+'-'+dm[2].padStart(2,'0')+'-'+dm[3].padStart(2,'0');}
+  dm=text.match(/(?:期限|締切|締め切り|まで|日程|開催日|実施日|予定日|訪問日|来訪|打合)[^\d]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+  if(dm) deadline=dm[1]+'-'+dm[2].padStart(2,'0')+'-'+dm[3].padStart(2,'0');
   if(!deadline){
     dm=text.match(/(\d{4})[年](\d{1,2})[月](\d{1,2})[日]/);
-    if(dm){deadline=dm[1]+'-'+dm[2].padStart(2,'0')+'-'+dm[3].padStart(2,'0');}
+    if(dm) deadline=dm[1]+'-'+dm[2].padStart(2,'0')+'-'+dm[3].padStart(2,'0');
   }
   if(!deadline){
     dm=text.match(/令和(\d+)年(\d{1,2})月(\d{1,2})日/);
@@ -3334,27 +3371,26 @@ function runParseText(){
   }
   if(!deadline){
     dm=text.match(/(\d{1,2})\/(\d{1,2})(?:[^\d]|$)/);
-    if(dm){var now=new Date(),m=parseInt(dm[1]),d=parseInt(dm[2]),y=now.getFullYear();if(m<now.getMonth()+1)y++;deadline=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+    if(dm){var now=new Date(),mo=parseInt(dm[1]),d=parseInt(dm[2]),y=now.getFullYear();if(mo<now.getMonth()+1)y++;deadline=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
   }
 
-  // 担当者
-  var person='';
-  var pm=text.match(/(?:担当者?|連絡先|From)[：:\s]+([^\s\n<（(【]{1,15})/);
-  if(pm) person=pm[1].trim();
-
-  // カテゴリ
+  // === カテゴリ ===
   var cat='その他';
-  if(/防災|避難|消防|訓練|BCP/.test(text)) cat='防災';
-  else if(/PC|パソコン|ソフト|システム|メール|ネット|OA|IT/.test(text)) cat='OA';
-  else if(/設備|空調|電気|水道|修繕|工事|業者/.test(text)) cat='設備';
-  else if(/人事|採用|研修|シフト|勤怠|給与|スタッフ/.test(text)) cat='人事';
+  if(/防災|避難|消防|訓練|BCP|感知器|スプリンクラー/.test(text)) cat='防災';
+  else if(/PC|パソコン|ソフト|システム|メール|ネット|WiFi|Wi-Fi|LAN|インターネット|プリンタ|複合機|OA|IT|トナー|サーバー/.test(text)) cat='OA';
+  else if(/設備|空調|電気|水道|修繕|工事|業者|エアコン|ボイラー|ポンプ|バルブ|エレベーター/.test(text)) cat='設備';
+  else if(/人事|採用|研修|シフト|勤怠|給与|スタッフ|職員|退職|入職/.test(text)) cat='人事';
 
-  // 種別
+  // === 種別 ===
   var kind='新規';
-  if(/依頼|お願い|ご確認/.test(text)) kind='依頼中';
+  if(/依頼|お願い|ご確認|いただけ|していただ/.test(text)) kind='依頼中';
   else if(/保留|延期|中断/.test(text)) kind='保留';
+  else if(/毎月|毎週|定期|定例/.test(text)) kind='定期';
 
-  var memo=text.substring(0,200);
+  // === メモ：ヘッダー行除いた本文 ===
+  var bodyLines=lines.filter(function(l){return !isHeaderLine(l);});
+  var memo=bodyLines.join('\n').substring(0,300);
+
   document.getElementById('pr-name').value=name;
   document.getElementById('pr-deadline').value=deadline;
   document.getElementById('pr-person').value=person;
@@ -3577,5 +3613,6 @@ function toggleSetupBar(){
 </div>
 </body>
 </html>
+
 
 
